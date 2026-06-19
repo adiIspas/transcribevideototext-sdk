@@ -1,0 +1,37 @@
+{
+  "name": "@transcribevideototext/cli",
+  "version": "0.1.0",
+  "description": "Command-line interface for the VideoToText transcription API.",
+  "license": "MIT",
+  "type": "module",
+  "bin": {
+    "transcribe": "dist/index.js"
+  },
+  "files": [
+    "dist"
+  ],
+  "engines": {
+    "node": ">=20"
+  },
+  "scripts": {
+    "build": "tsup",
+    "dev": "tsup --watch"
+  },
+  "dependencies": {
+    "@transcribevideototext/client": "workspace:*",
+    "commander": "^14.0.0"
+  },
+  "devDependencies": {
+    "@types/node": "^25.8.0",
+    "tsup": "^8.5.0",
+    "typescript": "^6.0.3"
+  },
+  "publishConfig": {
+    "access": "public"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/adiIspas/transcribevideototext-sdk.git",
+    "directory": "packages/cli"
+  }
+}
