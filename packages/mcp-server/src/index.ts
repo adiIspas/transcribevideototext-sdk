@@ -12,7 +12,7 @@
 import { McpServer } from "@modelcontextprotocol/sdk/server/mcp.js";
 import { StdioServerTransport } from "@modelcontextprotocol/sdk/server/stdio.js";
 import { createClient, VideoToTextError, type VideoToTextClient } from "@transcribevideototext/client";
-import { transcribeFile, uploadFile } from "@transcribevideototext/client/node";
+import { isExtractableUrl, uploadFile, uploadFromLink } from "@transcribevideototext/client/node";
 import { z } from "zod";
 import { formatList, formatTranscription } from "./format";
 
@@ -60,12 +60,21 @@ server.registerTool(
   {
     title: "Transcribe audio or video",
     description:
-      "Transcribe an audio/video file to text. Provide exactly ONE source: `url` (a public https link), " +
-      "`filePath` (an absolute path to a file on this machine — it is uploaded for you), or `storagePath` " +
-      "(from a prior create_upload_url). By default this waits for the transcript and returns the full text. " +
-      "Set `wait: false` to return immediately with a job id you can poll via get_transcription.",
+      "Transcribe an audio/video file to text. Provide exactly ONE source: `url` (a public https link — " +
+      "YouTube/X/LinkedIn and other supported sites are downloaded on this machine first; direct media links " +
+      "are fetched server-side), `filePath` (an absolute path to a file on this machine — it is uploaded for " +
+      "you), or `storagePath` (from a prior create_upload_url). By default this waits for the transcript and " +
+      "returns the full text. Set `wait: false` to return immediately with a job id you can poll via " +
+      "get_transcription.",
     inputSchema: {
-      url: z.string().url().optional().describe("Public https URL of the media to transcribe."),
+      url: z
+        .string()
+        .url()
+        .optional()
+        .describe(
+          "Public https URL. Platform links (YouTube, X, LinkedIn, …) are downloaded locally first; " +
+            "direct media links are fetched server-side. Public content only — gated/private posts are not supported.",
+        ),
       filePath: z.string().optional().describe("Absolute path to a local audio/video file on this machine."),
       storagePath: z.string().optional().describe("Storage path returned by create_upload_url."),
       language: z
@@ -101,17 +110,15 @@ server.registerTool(
     const poll = { timeoutMs: (args.timeoutSeconds ?? 600) * 1000 };
     const { language, diarize } = args;
 
-    if (args.filePath) {
-      if (wait)
-        return text(formatTranscription(await transcribeFile(client, args.filePath, { language, diarize, ...poll })));
-      const { path, fileName, contentType } = await uploadFile(client, args.filePath);
-      const created = await client.createTranscription({
-        storagePath: path,
-        fileName,
-        mediaType: contentType,
-        language,
-        diarize,
-      });
+    // Local files and platform links (YouTube/X/LinkedIn/…) both resolve to a local upload
+    // first; only direct media `url`s and `storagePath`s are handed straight to the API.
+    if (args.filePath || (args.url && isExtractableUrl(args.url))) {
+      const { path, fileName, contentType } = args.filePath
+        ? await uploadFile(client, args.filePath)
+        : await uploadFromLink(client, args.url!);
+      const input = { storagePath: path, fileName, mediaType: contentType, language, diarize };
+      if (wait) return text(formatTranscription(await client.transcribeAndWait(input, poll)));
+      const created = await client.createTranscription(input);
       return text(`Job created: ${created.id} (status: ${created.status}). Poll get_transcription for the result.`);
     }
 

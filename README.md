@@ -24,6 +24,8 @@ transcribe ./interview.mp4 --diarize
 claude mcp add vtt -e VTT_API_KEY=vtt_… -- npx -y @transcribevideototext/mcp-server
 ```
 
+Through the MCP server you can also paste a **YouTube, X, or LinkedIn** link (public content): it's downloaded locally with yt-dlp — auto-fetched on first use — then transcribed. See [the MCP server README](packages/mcp-server#transcribe-from-a-link).
+
 ```ts
 // Client
 import { createClient } from "@transcribevideototext/client";

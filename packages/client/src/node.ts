@@ -6,9 +6,13 @@
  * transcript. Imported by the CLI and the MCP server; not bundled into browser builds.
  */
 
-import { basename, extname } from "node:path";
+import { basename, dirname, extname } from "node:path";
 import { openAsBlob } from "node:fs";
+import { rm } from "node:fs/promises";
 import type { CreateTranscriptionInput, PollOptions, Transcription, VideoToTextClient } from "./index";
+import { downloadMedia } from "./ytdlp";
+
+export { isExtractableUrl } from "./ytdlp";
 
 const MIME_BY_EXT: Record<string, string> = {
   ".mp3": "audio/mpeg",
@@ -44,6 +48,25 @@ export async function uploadFile(
   const blob = await openAsBlob(filePath, { type: contentType });
   const { path } = await client.uploadBytes({ data: blob, fileName, contentType });
   return { path, fileName, contentType };
+}
+
+/**
+ * Download a platform link (YouTube/X/LinkedIn/…) with yt-dlp, upload it to signed storage,
+ * and clean up the temp file. Returns the `storagePath` for createTranscription — the same
+ * shape as `uploadFile`, so callers transcribe both identically.
+ */
+export async function uploadFromLink(
+  client: VideoToTextClient,
+  url: string,
+): Promise<{ path: string; fileName: string; contentType: string }> {
+  const { filePath, title } = await downloadMedia(url);
+  try {
+    const safeTitle = title?.replace(/[\\/\r\n]+/g, " ").trim();
+    const fileName = safeTitle ? `${safeTitle}${extname(filePath)}`.slice(0, 255) : basename(filePath);
+    return await uploadFile(client, filePath, { fileName });
+  } finally {
+    await rm(dirname(filePath), { recursive: true, force: true });
+  }
 }
 
 /** Upload a local file and transcribe it, polling until the transcript is ready. */
