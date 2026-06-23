@@ -51,7 +51,7 @@ export async function uploadFile(
 }
 
 /**
- * Download a platform link (YouTube/X/LinkedIn/…) with yt-dlp, upload it to signed storage,
+ * Download a link from any site yt-dlp supports (YouTube/X/LinkedIn/…) with yt-dlp, upload it to signed storage,
  * and clean up the temp file. Returns the `storagePath` for createTranscription — the same
  * shape as `uploadFile`, so callers transcribe both identically.
  */

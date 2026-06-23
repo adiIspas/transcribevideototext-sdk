@@ -1,9 +1,9 @@
 /**
  * Node-only yt-dlp integration for @transcribevideototext/client.
  *
- * Downloads media from platform links (YouTube, X, LinkedIn, …) on the user's own
- * machine — their residential IP avoids the datacenter blocking that breaks server-side
- * extraction. The yt-dlp binary is auto-fetched and cached on first use, so callers need
+ * Downloads media from any site yt-dlp supports (YouTube, X, LinkedIn, TikTok, …) on the
+ * user's own machine — their residential IP avoids the datacenter blocking that breaks
+ * server-side extraction. The yt-dlp binary is auto-fetched and cached on first use, so callers need
  * no setup. Audio-only (`bestaudio`) is preferred to keep downloads small and ffmpeg-free,
  * falling back to the smallest combined stream when no audio-only track exists.
  */
@@ -13,23 +13,32 @@ import { access, chmod, mkdir, mkdtemp, rename, stat, writeFile } from "node:fs/
 import { homedir, tmpdir } from "node:os";
 import { dirname, join } from "node:path";
 
-// Platforms whose links are HTML pages, not direct media, so the API can't pull them —
-// we download these locally. Anything else is treated as a direct media URL (unchanged).
-const EXTRACTABLE_HOSTS = ["youtube.com", "youtu.be", "x.com", "twitter.com", "linkedin.com"];
+// A direct media URL — one that ends in an audio/video file — is the only kind the API can
+// pull itself. Every other link is an HTML page (a YouTube/X/LinkedIn watch page, or any of
+// the many other sites yt-dlp handles) that we must download locally first. Rather than keep
+// our own site allowlist, we defer to yt-dlp for anything that isn't already a direct media
+// file, so the set of supported sites stays in sync with the bundled binary.
+const DIRECT_MEDIA_EXTENSIONS = [
+  ".mp3", ".m4a", ".aac", ".wav", ".flac", ".ogg", ".oga", ".opus", ".wma",
+  ".mp4", ".m4v", ".mov", ".webm", ".mkv", ".avi", ".wmv", ".flv", ".mpg", ".mpeg", ".3gp", ".ts",
+];
 
 // Re-fetch the cached binary when older than this; sites change often and a stale yt-dlp
 // silently stops working. Deleting the cache dir also forces a fresh download.
 const REFRESH_MS = 14 * 24 * 60 * 60 * 1000;
 
-/** True when `url` points at a platform we must download locally before transcribing. */
+/**
+ * True when `url` is a page we should download locally before transcribing — i.e. it isn't
+ * already a direct media file the API can fetch server-side. Invalid URLs return `false`.
+ */
 export function isExtractableUrl(url: string): boolean {
-  let host: string;
+  let pathname: string;
   try {
-    host = new URL(url).hostname.toLowerCase();
+    pathname = new URL(url).pathname.toLowerCase();
   } catch {
     return false;
   }
-  return EXTRACTABLE_HOSTS.some((domain) => host === domain || host.endsWith(`.${domain}`));
+  return !DIRECT_MEDIA_EXTENSIONS.some((ext) => pathname.endsWith(ext));
 }
 
 function binaryName(): string {
