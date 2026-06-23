@@ -61,8 +61,9 @@ server.registerTool(
     title: "Transcribe audio or video",
     description:
       "Transcribe an audio/video file to text. Provide exactly ONE source: `url` (a public https link — " +
-      "YouTube/X/LinkedIn and other supported sites are downloaded on this machine first; direct media links " +
-      "are fetched server-side), `filePath` (an absolute path to a file on this machine — it is uploaded for " +
+      "a page from YouTube, X, LinkedIn, TikTok, and hundreds of other sites is downloaded on this machine " +
+      "first, while a direct media link like an .mp3/.mp4 is fetched server-side), `filePath` (an absolute " +
+      "path to a file on this machine — it is uploaded for " +
       "you), or `storagePath` (from a prior create_upload_url). By default this waits for the transcript and " +
       "returns the full text. Set `wait: false` to return immediately with a job id you can poll via " +
       "get_transcription.",
@@ -72,8 +73,9 @@ server.registerTool(
         .url()
         .optional()
         .describe(
-          "Public https URL. Platform links (YouTube, X, LinkedIn, …) are downloaded locally first; " +
-            "direct media links are fetched server-side. Public content only — gated/private posts are not supported.",
+          "Public https URL. A page link (YouTube, X, LinkedIn, TikTok, and many other sites) is downloaded " +
+            "locally first; a direct media link (ending in .mp3, .mp4, …) is fetched server-side. Public " +
+            "content only — gated/private posts are not supported.",
         ),
       filePath: z.string().optional().describe("Absolute path to a local audio/video file on this machine."),
       storagePath: z.string().optional().describe("Storage path returned by create_upload_url."),

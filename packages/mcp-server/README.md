@@ -12,7 +12,12 @@ Then ask: _"Transcribe ./interview.mp4 with speaker labels."_ — or paste a lin
 
 ## Transcribe from a link
 
-`transcribe` accepts YouTube, X, and LinkedIn links (and [other yt-dlp-supported sites](https://github.com/yt-dlp/yt-dlp/blob/master/supportedsites.md)). The media is downloaded **on your own machine** (so it uses your IP, avoiding the datacenter blocking that breaks server-side extraction), then uploaded and transcribed. yt-dlp is fetched automatically on first use (~30 MB, cached); audio is preferred to keep downloads small. Direct media URLs (e.g. an `.mp3` link) are still fetched server-side as before.
+Paste a `url` into `transcribe` and it's handled one of two ways:
+
+- **A page from a video or social site** — YouTube, X, LinkedIn, TikTok, Facebook, Instagram, Vimeo, and hundreds of other sites — is downloaded **on your own machine** first (so it uses your IP, avoiding the datacenter blocking that breaks server-side extraction), then uploaded and transcribed. The downloader is fetched automatically on first use (~30 MB, cached); audio is preferred to keep downloads small.
+- **A direct media link** (a URL ending in a media file like `.mp3` or `.mp4`) is fetched server-side, with no local download.
+
+In short: if your link points straight at an audio/video file, it's pulled by the API; any other link is downloaded locally first. This local download happens only with the **local (stdio) server** below — the hosted remote server fetches every `url` server-side.
 
 > Public content only. Gated, private, or age-restricted posts (which require a login) are not supported.
 
@@ -46,7 +51,6 @@ Get an API key from the dashboard → **Developers → API Keys**.
 
 ## Environment
 
-| Var                | Description                                               |
-| ------------------ | --------------------------------------------------------- |
-| `VTT_API_KEY`      | Required. Your `vtt_…` API key.                           |
-| `VTT_API_BASE_URL` | Optional. Override the API base (defaults to production). |
+| Var           | Description                     |
+| ------------- | ------------------------------- |
+| `VTT_API_KEY` | Required. Your `vtt_…` API key. |
